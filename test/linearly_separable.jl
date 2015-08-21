@@ -1,5 +1,4 @@
 include("../src/scw.jl")
-include("digits.jl")
 
 import Base: size, convert
 
@@ -9,7 +8,7 @@ import SoftConfidenceWeighted: init, fit, predict, SCW1, SCW2
 function split_dataset(X, y, training_ratio=0.7)
     assert(0.0 <= training_ratio <= 1.0)
 
-    split_point = convert(Uint64, size(X, 1)*training_ratio)
+    split_point = convert(Int64, size(X, 1)*training_ratio)
     training = (X[1:split_point-1, :], y[1:split_point-1])
     test = (X[split_point:end, :], y[split_point:end])
     return (training, test)
@@ -26,8 +25,6 @@ function calc_accuracy(results, answers)
 
     return n_correct_answers / length(results)
 end
-
-
 
 
 function test_batch(X, y, type_; training_ratio=0.7, C=1.0, ETA=1.0)
@@ -81,7 +78,8 @@ function test_online(X, y, type_; training_ratio=0.7, C=1.0, ETA=1.0)
 end
 
 
-X, y = load_digits()
+X = readdlm("data/digitsX.txt")
+y = readdlm("data/digitsy.txt")
 
 println("TEST DIGITS\n")
 
