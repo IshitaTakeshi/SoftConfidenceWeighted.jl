@@ -1,5 +1,3 @@
-include("../src/scw.jl")
-
 import Base: size, convert
 
 import SoftConfidenceWeighted: init, fit, predict, SCW1, SCW2
