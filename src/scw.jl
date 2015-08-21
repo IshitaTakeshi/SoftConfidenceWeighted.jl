@@ -12,15 +12,27 @@ type CDF
     phi
     psi
     zeta
+
+    function CDF(ETA)
+        phi = cdf(normal_distribution, ETA)
+        psi = 1 + phi^2 / 2
+        zeta = 1 + phi^2
+        new(phi, psi, zeta)
+    end
 end
 
 
+#calc cdf in a constructor
 type SCW
     C::Float64
     cdf::CDF
     weights::Array{Float64, 1}
     covariance::Array{Float64, 1}
     has_fitted::Bool
+
+    function SCW(C, ETA)
+        new(C, CDF(ETA), [], [], false)
+    end
 end
 
 
@@ -68,14 +80,6 @@ function calc_alpha2(scw, x, label)
 end
 
 
-function calc_cdf(eta)
-    phi = cdf(normal_distribution, eta)
-    psi = 1 + phi^2 / 2
-    zeta = 1 + phi^2
-    return (phi, psi, zeta)
-end
-
-
 function init(C, ETA, type_=SCW1::SCWType)
     global calc_alpha
     if type_ == SCW1
@@ -86,8 +90,7 @@ function init(C, ETA, type_=SCW1::SCWType)
         assert(true)
     end
 
-    c = calc_cdf(ETA)
-    return SCW(C, CDF(c...), [], [], false)
+    return SCW(C, ETA)
 end
 
 
