@@ -76,8 +76,8 @@ function test_online(X, y, type_; training_ratio=0.7, C=1.0, ETA=1.0)
 end
 
 
-X = readdlm("data/digitsX.txt")
-y = readdlm("data/digitsy.txt")
+X = readdlm("../data/digitsX.txt")
+y = readdlm("../data/digitsy.txt")
 
 println("TEST DIGITS\n")
 
