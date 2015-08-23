@@ -1,6 +1,7 @@
 module SoftConfidenceWeighted
 
 import Distributions: Normal, cdf
+import SVMLightLoader: SVMLightFile
 
 export init, fit, predict, SCW1, SCW2
 
@@ -26,13 +27,24 @@ end
 type SCW
     C::Float64
     cdf::CDF
+    ndim::Int64
     weights::Array{Float64, 1}
     covariance::Array{Float64, 1}
     has_fitted::Bool
 
     function SCW(C, ETA)
-        new(C, CDF(ETA), [], [], false)
+        new(C, CDF(ETA), -1, [], [], false)
     end
+end
+
+
+function set_dimension(scw, ndim)
+    assert(!scw.has_fitted)
+    scw.ndim = ndim
+    scw.weights = zeros(ndim)
+    scw.covariance = ones(ndim)
+    scw.has_fitted = true
+    return scw
 end
 
 
@@ -133,6 +145,7 @@ end
 
 
 function update(scw::SCW, x, label)
+    x = vec(full(x))
     if loss(scw, x, label) > 0
         scw = update_weights(scw, x, label)
         scw = update_covariance(scw, x, label)
@@ -143,28 +156,40 @@ end
 
 function train(scw, X, labels)
     for i in 1:size(X, 1)
-        x = vec(full(X[i, :]))
-        scw = update(scw, x, labels[i])
+        scw = update(scw, X[i, :], labels[i])
     end
     return scw
 end
 
 
-function fit(scw::SCW, X, labels)
+function fit(scw::SCW, X::AbstractArray, labels::AbstractArray)
     assert(ndims(X) == 2)
-    assert(ndims(labels) == 1)
-    ndim = size(X)[2]
+    assert(ndims(labels) <= 2)
+
     if !scw.has_fitted
-        scw.weights = zeros(ndim)
-        scw.covariance = ones(ndim)
-        scw.has_fitted = true
+        ndim = size(X, 2)
+        scw = set_dimension(scw, ndim)
     end
+
     scw = train(scw, X, labels)
     return scw
 end
 
 
+function fit(scw::SCW, filename::String, ndim::Int64)
+    if !scw.has_fitted
+        scw = set_dimension(scw, ndim)
+    end
+
+    for (vector, label) in SVMLightFile(filename, ndim)
+        scw = update(scw, vector, label)
+    end
+    return scw
+end
+
+
 function compute(scw, x)
+    x = vec(full(x))
     if dot(x, scw.weights) > 0
         return 1
     else
@@ -173,8 +198,18 @@ function compute(scw, x)
 end
 
 
-function predict(scw, X)
-    return [compute(scw, vec(full(X[i, :]))) for i in 1:size(X, 1)]
+function predict(scw::SCW, X::AbstractArray)
+    return [compute(scw, X[i, :]) for i in 1:size(X, 1)]
+end
+
+
+function predict(scw::SCW, filename::String)
+    labels = Int64[]
+    for (x, _) in SVMLightFile(filename, scw.ndim)
+        label = compute(scw, x)
+        push!(labels, label)
+    end
+    return labels
 end
 
 end # module

@@ -2,8 +2,9 @@ import Base: size, convert
 
 import SoftConfidenceWeighted: init, fit, predict, SCW1, SCW2
 
+import SVMLightLoader: SVMLightFile
 
-function split_dataset(X, y, training_ratio=0.7)
+function split_dataset(X, y, training_ratio=0.8)
     assert(0.0 <= training_ratio <= 1.0)
 
     split_point = convert(Int64, size(X, 1)*training_ratio)
@@ -25,7 +26,7 @@ function calc_accuracy(results, answers)
 end
 
 
-function test_batch(X, y, type_; training_ratio=0.7, C=1.0, ETA=1.0)
+function test_batch(X, y, type_; training_ratio=0.8, C=1.0, ETA=1.0)
     model = init(C, ETA, type_)
 
     (training, test) = split_dataset(X, y, training_ratio)
@@ -46,7 +47,7 @@ function test_batch(X, y, type_; training_ratio=0.7, C=1.0, ETA=1.0)
 end
 
 
-function test_online(X, y, type_; training_ratio=0.7, C=1.0, ETA=1.0)
+function test_online(X, y, type_; training_ratio=0.8, C=1.0, ETA=1.0)
     model = init(C, ETA, type_)
 
     (training, test) = split_dataset(X, y, training_ratio)
@@ -76,8 +77,25 @@ function test_online(X, y, type_; training_ratio=0.7, C=1.0, ETA=1.0)
 end
 
 
-X = readdlm("data/digitsX.txt")
-y = readdlm("data/digitsy.txt")
+function test_svmlight(training_file, test_file, ndim, type_;
+                       training_ratio=0.8, C=1.0, ETA=1.0)
+    model = init(C, ETA, type_)
+    model = fit(model, training_file, ndim)
+    results = predict(model, test_file)
+
+    answers = []
+    for (i, (x, answer)) in enumerate(SVMLightFile(test_file))
+        push!(answers, answer)
+    end
+
+    accuracy = calc_accuracy(results, answers)
+    assert(accuracy == 1.0)
+end
+
+if false
+
+X = readdlm("data/julia_array/digitsX.txt")
+y = readdlm("data/julia_array/digitsy.txt")
 
 println("TEST DIGITS\n")
 
@@ -86,3 +104,21 @@ test_batch(X, y, SCW2, training_ratio=0.8)
 
 test_online(X, y, SCW1, training_ratio=0.8)
 test_online(X, y, SCW2, training_ratio=0.8)
+
+
+X = sparse(X)
+y = sparse(y)
+
+
+test_batch(X, y, SCW1, training_ratio=0.8)
+test_batch(X, y, SCW2, training_ratio=0.8)
+
+test_online(X, y, SCW1, training_ratio=0.8)
+test_online(X, y, SCW2, training_ratio=0.8)
+end
+
+training_file = "data/svmlight/digits.train.txt"
+test_file = "data/svmlight/digits.test.txt"
+ndim = 64
+test_svmlight(training_file, test_file, ndim, SCW1)
+test_svmlight(training_file, test_file, ndim, SCW2)
