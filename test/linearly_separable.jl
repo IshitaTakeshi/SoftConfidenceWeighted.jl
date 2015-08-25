@@ -7,9 +7,9 @@ import SVMLightLoader: SVMLightFile
 function split_dataset(X, y, training_ratio=0.8)
     assert(0.0 <= training_ratio <= 1.0)
 
-    split_point = convert(Int64, size(X, 1)*training_ratio)
-    training = (X[1:split_point-1, :], y[1:split_point-1])
-    test = (X[split_point:end, :], y[split_point:end])
+    split_point = convert(Int64, size(X, 2)*training_ratio)
+    training = (X[:, 1:split_point-1], y[1:split_point-1])
+    test = (X[:, split_point:end], y[split_point:end])
     return (training, test)
 end
 
@@ -53,17 +53,15 @@ function test_online(X, y, type_; training_ratio=0.8, C=1.0, ETA=1.0)
     (training, test) = split_dataset(X, y, training_ratio)
 
     (samples, labels) = training
-    for i in 1:size(samples, 1)
-        s = reshape(samples[i, :], 1, size(samples, 2))
-        model = fit(model, s, [labels[i]])
+    for i in 1:size(samples, 2)
+        model = fit(model, samples[:, i], [labels[i]])
     end
 
     (samples, answers) = test
 
     results = []
-    for i in 1:size(samples, 1)
-        s = reshape(samples[i, :], 1, size(samples, 2))
-        r = predict(model, s)
+    for i in 1:size(samples, 2)
+        r = predict(model, samples[:, i])
         append!(results, r)
     end
 
@@ -92,8 +90,6 @@ function test_svmlight(training_file, test_file, ndim, type_;
     assert(accuracy == 1.0)
 end
 
-if false
-
 X = readdlm("data/julia_array/digitsX.txt")
 y = readdlm("data/julia_array/digitsy.txt")
 
@@ -115,7 +111,6 @@ test_batch(X, y, SCW2, training_ratio=0.8)
 
 test_online(X, y, SCW1, training_ratio=0.8)
 test_online(X, y, SCW2, training_ratio=0.8)
-end
 
 training_file = "data/svmlight/digits.train.txt"
 test_file = "data/svmlight/digits.test.txt"

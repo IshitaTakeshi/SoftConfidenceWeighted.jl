@@ -155,19 +155,19 @@ end
 
 
 function train(scw, X, labels)
-    for i in 1:size(X, 1)
-        scw = update(scw, X[i, :], labels[i])
+    for i in 1:size(X, 2)
+        scw = update(scw, slice(X, :, i), labels[i])
     end
     return scw
 end
 
 
 function fit(scw::SCW, X::AbstractArray, labels::AbstractArray)
-    assert(ndims(X) == 2)
+    assert(ndims(X) <= 2)
     assert(ndims(labels) <= 2)
 
     if !scw.has_fitted
-        ndim = size(X, 2)
+        ndim = size(X, 1)
         scw = set_dimension(scw, ndim)
     end
 
@@ -199,7 +199,7 @@ end
 
 
 function predict(scw::SCW, X::AbstractArray)
-    return [compute(scw, X[i, :]) for i in 1:size(X, 1)]
+    return [compute(scw, slice(X, :, i)) for i in 1:size(X, 2)]
 end
 
 
