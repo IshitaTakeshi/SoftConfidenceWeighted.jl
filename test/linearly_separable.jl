@@ -1,8 +1,8 @@
 import Base: size, convert
 
 import SoftConfidenceWeighted: init, fit, predict, SCW1, SCW2
-
 import SVMLightLoader: SVMLightFile
+
 
 function split_dataset(X, y, training_ratio=0.8)
     assert(0.0 <= training_ratio <= 1.0)
