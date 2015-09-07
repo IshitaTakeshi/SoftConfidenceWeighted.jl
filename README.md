@@ -1,5 +1,5 @@
 # SoftConfidenceWeighted
-This is an online supervised learning algorithm which enjoys the four salient properties:
+This is an online supervised learning algorithm which utilizes the four salient properties:
 
 * Large margin training
 * Confidence weighting
@@ -9,8 +9,7 @@ This is an online supervised learning algorithm which enjoys the four salient pr
 The paper is [here](http://icml.cc/2012/papers/86.pdf).
 
 ## Usage
-
-SCW has 2 folumations of its algorithm which are SCW-I and SCW-II.  
+SCW has 2 formulations of its algorithm which are SCW-I and SCW-II.  
 You can choose which to use by the parameter of `init`.  
 
 ### Training from matrices
@@ -24,7 +23,7 @@ results = predict(model, X)
 ```
 
 ### Training from file
-The input files must be the svmlight format.
+The input files must be in the svmlight format.
 
 ```
 model = init(C, ETA, SCW1)
