@@ -90,22 +90,23 @@ function test_svmlight(training_file, test_file, ndim, type_;
     assert(accuracy == 1.0)
 end
 
+
 X = readdlm("data/julia_array/digitsX.txt")
 y = readdlm("data/julia_array/digitsy.txt")
 
 println("TEST DIGITS\n")
 
+# Dense matrix
 test_batch(X, y, SCW1, training_ratio=0.8)
 test_batch(X, y, SCW2, training_ratio=0.8)
 
 test_online(X, y, SCW1, training_ratio=0.8)
 test_online(X, y, SCW2, training_ratio=0.8)
 
-
 X = sparse(X)
 y = sparse(y)
 
-
+# Sparse matrix
 test_batch(X, y, SCW1, training_ratio=0.8)
 test_batch(X, y, SCW2, training_ratio=0.8)
 
