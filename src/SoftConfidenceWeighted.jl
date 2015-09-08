@@ -156,7 +156,9 @@ end
 
 function train(scw, X, labels)
     for i in 1:size(X, 2)
-        scw = update(scw, slice(X, :, i), labels[i])
+        label = labels[i]
+        assert(label == 1 || label == -1)
+        scw = update(scw, slice(X, :, i), label)
     end
     return scw
 end
