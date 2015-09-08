@@ -5,6 +5,7 @@ import SVMLightLoader: SVMLightFile
 
 export init, fit, predict, SCW1, SCW2
 
+typealias AA AbstractArray
 
 @enum SCWType SCW1 SCW2
 
@@ -38,7 +39,7 @@ type SCW
 end
 
 
-function set_dimension(scw, ndim)
+function set_dimension(scw::SCW, ndim::Int)
     assert(!scw.has_fitted)
     scw.ndim = ndim
     scw.weights = zeros(ndim)
@@ -51,17 +52,17 @@ end
 normal_distribution = Normal(0, 1)
 
 
-function calc_margin(scw, x, label)
+function calc_margin{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
     return label * dot(scw.weights, x)
 end
 
 
-function calc_confidence(scw, x)
+function calc_confidence{T<:AA}(scw::SCW, x::T)
     return dot(x, (scw.covariance .* x))
 end
 
 
-function calc_alpha1(scw, x, label)
+function calc_alpha1{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
     v = calc_confidence(scw, x)
     m = calc_margin(scw, x, label)
     cdf = scw.cdf
@@ -74,7 +75,7 @@ function calc_alpha1(scw, x, label)
 end
 
 
-function calc_alpha2(scw, x, label)
+function calc_alpha2{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
     v = calc_confidence(scw, x)
     m = calc_margin(scw, x, label)
     cdf = scw.cdf
@@ -106,7 +107,7 @@ function init(C, ETA, type_=SCW1::SCWType)
 end
 
 
-function loss(scw, x, label)
+function loss{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
     t = label * dot(scw.weights, x)
     if t >= 1
         return 0
@@ -115,7 +116,7 @@ function loss(scw, x, label)
 end
 
 
-function calc_beta(scw, x, label)
+function calc_beta{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
     alpha = calc_alpha(scw, x, label)
     v = calc_confidence(scw, x)
     m = calc_margin(scw, x, label)
@@ -129,7 +130,7 @@ function calc_beta(scw, x, label)
 end
 
 
-function update_covariance(scw, x, label)
+function update_covariance{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
     beta = calc_beta(scw, x, label)
     c = scw.covariance
     scw.covariance -= beta * (c .* x) .* (c .* x)
@@ -137,14 +138,14 @@ function update_covariance(scw, x, label)
 end
 
 
-function update_weights(scw, x, label)
+function update_weights{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
     alpha = calc_alpha(scw, x, label)
     scw.weights += alpha * label * (scw.covariance .* x)
     return scw
 end
 
 
-function update(scw::SCW, x, label)
+function update{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
     x = vec(full(x))
     if loss(scw, x, label) > 0
         scw = update_weights(scw, x, label)
@@ -154,7 +155,7 @@ function update(scw::SCW, x, label)
 end
 
 
-function train(scw, X, labels)
+function train{T<:AA,R<:AA}(scw::SCW, X::T, labels::R)
     for i in 1:size(X, 2)
         label = labels[i]
         assert(label == 1 || label == -1)
@@ -164,7 +165,7 @@ function train(scw, X, labels)
 end
 
 
-function fit(scw::SCW, X::AbstractArray, labels::AbstractArray)
+function fit{T<:AA,R<:AA}(scw::SCW, X::T, labels::R)
     assert(ndims(X) <= 2)
     assert(ndims(labels) <= 2)
 
@@ -190,7 +191,7 @@ function fit(scw::SCW, filename::String, ndim::Int64)
 end
 
 
-function compute(scw, x)
+function compute{T<:AA}(scw::SCW, x::T)
     x = vec(full(x))
     if dot(x, scw.weights) > 0
         return 1
@@ -200,7 +201,7 @@ function compute(scw, x)
 end
 
 
-function predict(scw::SCW, X::AbstractArray)
+function predict{T<:AA}(scw::SCW, X::T)
     return [compute(scw, slice(X, :, i)) for i in 1:size(X, 2)]
 end
 
