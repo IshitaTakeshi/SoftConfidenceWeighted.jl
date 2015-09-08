@@ -12,6 +12,11 @@ The paper is [here](http://arxiv.org/pdf/1206.4612v1.pdf).
 SCW has 2 formulations of its algorithm which are SCW-I and SCW-II.  
 You can choose which to use by the parameter of `init`.  
 
+### Note
+1. This package performs only binary classification, not multiclass classification.
+2. The training labels must be 1 or -1. No other labels allowed.
+
+
 ### Training from matrix
 Feature vectors are given as the columns of the matrix X.
 
