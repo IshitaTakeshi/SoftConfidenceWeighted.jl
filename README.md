@@ -6,7 +6,7 @@ This is an online supervised learning algorithm which utilizes the four salient 
 * Capability to handle non-separable data
 * Adaptive margin
 
-The paper is [here](http://icml.cc/2012/papers/86.pdf).
+The paper is [here](http://arxiv.org/pdf/1206.4612v1.pdf).
 
 ## Usage
 SCW has 2 formulations of its algorithm which are SCW-I and SCW-II.  
