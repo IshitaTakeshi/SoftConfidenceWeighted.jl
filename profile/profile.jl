@@ -12,7 +12,7 @@ function benchmark(func, args...; filename="trace.def")
     @time func(args...)
 
     # Run a second time, with profiling.
-    println("\n\n======================= Second run:")
+    println("======================= Second run:")
 
     Profile.init()
     Profile.clear()
@@ -24,21 +24,30 @@ function benchmark(func, args...; filename="trace.def")
     f = open(filename, "w")
     Profile.print(f)
     close(f)
+
+    println("\n\n")
 end
 
 
-url = "http://www.csie.ntu.edu.tw/~cjlin/libsvmtools/datasets/binary/a1a"
-filename = basename(url)
-
-if !isfile(filename)
-    import HTTPClient: get
-    contents = get(url)
-    f = open(filename, "w")
-    write(f, contents.body.data)
-    close(f)
+function calc_accuracy(results, answers)
+    n_correct_answers = 0
+    for (result, answer) in zip(results, answers)
+        if result == answer
+            n_correct_answers += 1
+        end
+    end
+    accuracy = n_correct_answers / length(y)
 end
 
-X, y = load_svmlight_file(filename)
-model = init(1.0, 1.0)
+
+X, y = load_svmlight_file("data.txt")
+
+model = init(10.0, 10.0)
+
 benchmark(fit, model, X, y, filename="trace.fit.txt")
-benchmark(predict, model, X, filename="trace.predict.txt")
+
+model = fit(model, X, y)
+results = predict(model, X)
+
+accuracy = calc_accuracy(results, y)
+println("Accuracy: $accuracy")
