@@ -7,6 +7,7 @@ import SVMLightLoader: SVMLightFile
 
 export init, fit, predict, SCW1, SCW2
 
+
 typealias AA AbstractArray
 
 @enum SCWType SCW1 SCW2
@@ -55,6 +56,7 @@ normal_distribution = Normal(0, 1)
 
 
 function calc_margin{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
+    #Devectorize.jl requires assignment
     @devec t = label .* dot(scw.weights, x)
 end
 
@@ -135,6 +137,9 @@ end
 function update_covariance{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, label::R)
     beta = calc_beta(scw, x, label)
     c = scw.covariance
+
+    # same as
+    # scw.covariance -= beta * (c .* x) .* (c .* x)
     @devec t[:] = (c .* x) .* (c .* x)
     BLAS.axpy!(-beta, t, scw.covariance)
     return scw
@@ -143,6 +148,9 @@ end
 
 function update_weights{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, label::R)
     alpha = calc_alpha(scw, x, label)
+
+    # same as
+    # scw.weights += alpha * label * (scw.covariance .* x)
     @devec t[:] = scw.covariance .* x
     BLAS.axpy!(alpha * label, t, scw.weights)
     return scw
@@ -159,18 +167,8 @@ function update{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, label::R)
 end
 
 
-function update{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
-    x = vec(full(x))
-    t = Array(Float64, length(x))
-    if loss(scw, x, label) > 0
-        scw = update_weights(t, scw, x, label)
-        scw = update_covariance(t, scw, x, label)
-    end
-    return scw
-end
-
-
 function train{T<:AA,R<:AA}(scw::SCW, X::T, labels::R)
+    # preallocate for performance optimization
     t = Array(Float64, size(X, 1))
     for i in 1:size(X, 2)
         label = labels[i]
@@ -200,8 +198,9 @@ function fit(scw::SCW, filename::String, ndim::Int64)
         scw = set_dimension(scw, ndim)
     end
 
+    t = Array(Float64, ndim)
     for (vector, label) in SVMLightFile(filename, ndim)
-        scw = update(scw, vector, label)
+        scw = update(t, scw, vector, label)
     end
     return scw
 end
