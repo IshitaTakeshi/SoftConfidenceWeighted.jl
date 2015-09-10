@@ -54,14 +54,14 @@ function test_online(X, y, type_; training_ratio=0.8, C=1.0, ETA=1.0)
 
     (samples, labels) = training
     for i in 1:size(samples, 2)
-        model = fit(model, samples[:, i], [labels[i]])
+        model = fit(model, slice(samples, :, i), [labels[i]])
     end
 
     (samples, answers) = test
 
-    results = []
+    results = Int64[]
     for i in 1:size(samples, 2)
-        r = predict(model, samples[:, i])
+        r = predict(model, slice(samples, :, i))
         append!(results, r)
     end
 
@@ -79,12 +79,9 @@ function test_svmlight(training_file, test_file, ndim, type_;
                        training_ratio=0.8, C=1.0, ETA=1.0)
     model = init(C, ETA, type_)
     model = fit(model, training_file, ndim)
-    results = predict(model, test_file)
 
-    answers = []
-    for (i, (x, answer)) in enumerate(SVMLightFile(test_file))
-        push!(answers, answer)
-    end
+    results = predict(model, test_file)
+    answers = [label for (_, label) in SVMLightFile(test_file)]
 
     accuracy = calc_accuracy(results, answers)
     assert(accuracy == 1.0)
