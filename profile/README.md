@@ -27,7 +27,7 @@ More details will be written to `trace.fit.txt`
 To compare the performance of sklearn.svm.LinearSVC and SoftConfidenceWeighted.jl, run
 
 ```
-$python3 generate_dataset.py 
+$python3 dataset.py  #generate dataset
 $python3 linearsvc.py
 $julia profile.jl
 ```
