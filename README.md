@@ -14,7 +14,7 @@ You can choose which to use by the parameter of `init`.
 
 ### Note
 1. This package performs only binary classification, not multiclass classification.
-2. The training labels must be 1 or -1. No other labels allowed.
+2. Training labels must be 1 or -1. No other labels allowed.
 
 
 ### Training from matrix
