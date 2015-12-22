@@ -1,8 +1,8 @@
 import SVMLightLoader: load_svmlight_file
-import SoftConfidenceWeighted: init, fit, predict
+import SoftConfidenceWeighted: init, fit!, predict
 
 
-# The code is from below:
+# The code is from
 # http://thirld.com/blog/2015/05/30/julia-profiling-cheat-sheet/
 function benchmark(func, args...; filename="trace.def")
     # Any setup code goes here.
@@ -24,8 +24,6 @@ function benchmark(func, args...; filename="trace.def")
     f = open(filename, "w")
     Profile.print(f)
     close(f)
-
-    println("\n\n")
 end
 
 
@@ -44,9 +42,10 @@ X, y = load_svmlight_file("data.txt")
 
 model = init(10.0, 10.0)
 
-benchmark(fit, model, X, y, filename="trace.fit.txt")
+benchmark(fit!, model, X, y, filename="trace.fit.txt")
 
-model = fit(model, X, y)
+model = init(10.0, 10.0)
+model = fit!(model, X, y)
 results = predict(model, X)
 
 accuracy = calc_accuracy(results, y)
