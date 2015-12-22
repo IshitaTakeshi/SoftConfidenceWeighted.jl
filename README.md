@@ -23,7 +23,7 @@ Feature vectors are given as the columns of the matrix X.
 ```
 #C and ETA are hyperparameters.
 model = init(C, ETA, type_)
-model = fit(model, X, y)
+model = fit!(model, X, y)
 results = predict(model, X)
 ```
 
@@ -32,6 +32,6 @@ The input files must be in the svmlight format.
 
 ```
 model = init(C, ETA, SCW1)
-model = fit(model, training_file, ndim)
+model = fit!(model, training_file, ndim)
 results = predict(model, test_file)
 ```
