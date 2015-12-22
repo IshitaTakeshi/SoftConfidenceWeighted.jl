@@ -2,4 +2,7 @@
 *.jl.*.cov
 *.jl.mem
 
-*.swp
+*.sw[l-p]
+*.csv
+*.pyc
+profile/*.txt
