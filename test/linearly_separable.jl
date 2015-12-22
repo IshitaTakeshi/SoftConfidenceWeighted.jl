@@ -1,6 +1,6 @@
 import Base: size, convert
 
-import SoftConfidenceWeighted: init, fit, predict, SCW1, SCW2
+import SoftConfidenceWeighted: init, fit!, predict, SCW1, SCW2
 import SVMLightLoader: SVMLightFile
 
 
@@ -32,7 +32,7 @@ function test_batch(X, y, type_; training_ratio=0.8, C=1.0, ETA=1.0)
     (training, test) = split_dataset(X, y, training_ratio)
 
     (samples, labels) = training
-    model = fit(model, samples, labels)
+    model = fit!(model, samples, labels)
 
     (samples, answers) = test
     results = predict(model, samples)
@@ -54,7 +54,7 @@ function test_online(X, y, type_; training_ratio=0.8, C=1.0, ETA=1.0)
 
     (samples, labels) = training
     for i in 1:size(samples, 2)
-        model = fit(model, slice(samples, :, i), [labels[i]])
+        model = fit!(model, slice(samples, :, i), [labels[i]])
     end
 
     (samples, answers) = test
@@ -78,7 +78,7 @@ end
 function test_svmlight(training_file, test_file, ndim, type_;
                        training_ratio=0.8, C=1.0, ETA=1.0)
     model = init(C, ETA, type_)
-    model = fit(model, training_file, ndim)
+    model = fit!(model, training_file, ndim)
 
     results = predict(model, test_file)
     answers = [label for (_, label) in SVMLightFile(test_file)]

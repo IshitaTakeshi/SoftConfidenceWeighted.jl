@@ -5,7 +5,7 @@ using Devectorize
 import Distributions: Normal, cdf
 import SVMLightLoader: SVMLightFile
 
-export init, fit, predict, SCW1, SCW2
+export init, fit!, predict, SCW1, SCW2
 
 
 typealias AA AbstractArray
@@ -42,7 +42,7 @@ type SCW
 end
 
 
-function set_dimension(scw::SCW, ndim::Int)
+function set_dimension!(scw::SCW, ndim::Int)
     assert(!scw.has_fitted)
     scw.ndim = ndim
     scw.weights = zeros(ndim)
@@ -134,7 +134,7 @@ function calc_beta{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
 end
 
 
-function update_covariance{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, label::R)
+function update_covariance!{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, label::R)
     beta = calc_beta(scw, x, label)
     c = scw.covariance
 
@@ -146,7 +146,7 @@ function update_covariance{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, label::R)
 end
 
 
-function update_weights{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, label::R)
+function update_weights!{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, label::R)
     alpha = calc_alpha(scw, x, label)
 
     # same as
@@ -157,53 +157,56 @@ function update_weights{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, label::R)
 end
 
 
-function update{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, label::R)
+function update!{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, label::R)
     x = vec(full(x))
     if loss(scw, x, label) > 0
-        scw = update_weights(t, scw, x, label)
-        scw = update_covariance(t, scw, x, label)
+        update_weights!(t, scw, x, label)
+        update_covariance!(t, scw, x, label)
     end
     return scw
 end
 
 
-function train{T<:AA,R<:AA}(scw::SCW, X::T, labels::R)
+function train!{T<:AA,R<:AA}(scw::SCW, X::T, labels::R)
     # preallocate for performance optimization
     t = Array(Float64, size(X, 1))
     for i in 1:size(X, 2)
         label = labels[i]
         assert(label == 1 || label == -1)
-        scw = update(t, scw, slice(X, :, i), label)
+        update!(t, scw, slice(X, :, i), label)
     end
     return scw
 end
 
 
-function fit{T<:AA,R<:AA}(scw::SCW, X::T, labels::R)
+function fit!{T<:AA,R<:AA}(scw::SCW, X::T, labels::R)
     assert(ndims(X) <= 2)
     assert(ndims(labels) <= 2)
 
     if !scw.has_fitted
         ndim = size(X, 1)
-        scw = set_dimension(scw, ndim)
+        set_dimension!(scw, ndim)
     end
 
-    scw = train(scw, X, labels)
+    train!(scw, X, labels)
     return scw
 end
 
 
-function fit(scw::SCW, filename::String, ndim::Int64)
+function fit!(scw::SCW, filename::String, ndim::Int64)
     if !scw.has_fitted
-        scw = set_dimension(scw, ndim)
+        set_dimension!(scw, ndim)
     end
 
     t = Array(Float64, ndim)
     for (vector, label) in SVMLightFile(filename, ndim)
-        scw = update(t, scw, vector, label)
+        update!(t, scw, vector, label)
     end
     return scw
 end
+
+
+@deprecate fit fit!
 
 
 function compute{T<:AA}(scw::SCW, x::T)
