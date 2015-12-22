@@ -193,7 +193,7 @@ function fit!{T<:AA,R<:AA}(scw::SCW, X::T, labels::R)
 end
 
 
-function fit!(scw::SCW, filename::String, ndim::Int64)
+function fit!(scw::SCW, filename::AbstractString, ndim::Int64)
     if !scw.has_fitted
         set_dimension!(scw, ndim)
     end
@@ -224,7 +224,7 @@ function predict{T<:AA}(scw::SCW, X::T)
 end
 
 
-function predict(scw::SCW, filename::String)
+function predict(scw::SCW, filename::AbstractString)
     labels = Int64[]
     for (x, _) in SVMLightFile(filename, scw.ndim)
         label = compute(scw, x)
