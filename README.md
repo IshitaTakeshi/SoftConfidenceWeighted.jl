@@ -21,17 +21,27 @@ You can choose which to use by the parameter of `init`.
 Feature vectors are given as the columns of the matrix X.
 
 ```
-#C and ETA are hyperparameters.
-model = init(C, ETA, type_)
-model = fit!(model, X, y)
-results = predict(model, X)
+using SoftConfidenceWeighted
+using SVMLightLoader
+
+ndim = 64
+X_train, y_train = load_svmlight_file("data/svmlight/digits.train.txt", ndim)
+X_test, y_test = load_svmlight_file("data/svmlight/digits.test.txt", ndim)
+
+# C and ETA are hyperparameters.
+
+model = init(C = 1, ETA = 1, type_ = SCW1)
+model = fit!(model, X_train, y_train)
+y_pred = predict(model, X_test)
+assert(all(y_pred .== y_test))
 ```
 
 ### Training from file
 The input files must be in the svmlight format.
 
 ```
-model = init(C, ETA, SCW1)
-model = fit!(model, training_file, ndim)
-results = predict(model, test_file)
+model = init(C = 1, ETA = 1, type_ = SCW1)
+model = fit!(model, "data/svmlight/digits.train.txt", ndim)
+y_pred = predict(model, "data/svmlight/digits.test.txt")
+assert(all(y_pred .== y_test))
 ```
