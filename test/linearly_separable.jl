@@ -8,36 +8,36 @@ function split_dataset(X, y, training_ratio=0.8)
     assert(0.0 <= training_ratio <= 1.0)
 
     split_point = convert(Int64, size(X, 2)*training_ratio)
-    training = (X[:, 1:split_point-1], y[1:split_point-1])
-    test = (X[:, split_point:end], y[split_point:end])
-    return (training, test)
+    training = X[:, 1:split_point-1], y[1:split_point-1]
+    test = X[:, split_point:end], y[split_point:end]
+    return training, test
 end
 
 
-function calc_accuracy(results, answers)
-    n_correct_answers = 0
-    for (result, answer) in zip(results, answers)
-        if result == answer
-            n_correct_answers += 1
+function calc_accuracy(y_pred, y_true)
+    n_correct = 0
+    for (a, b) in zip(y_pred, y_true)
+        if a == b
+            n_correct += 1
         end
     end
 
-    return n_correct_answers / length(results)
+    return n_correct / length(y_pred)
 end
 
 
-function test_batch(X, y, type_; training_ratio=0.8, C=1.0, ETA=1.0)
+function test_batch(X, y, type_; training_ratio = 0.8, C = 1.0, ETA = 1.0)
     model = init(C, ETA, type_)
 
-    (training, test) = split_dataset(X, y, training_ratio)
+    training, test = split_dataset(X, y, training_ratio)
 
-    (samples, labels) = training
-    model = fit!(model, samples, labels)
+    X, labels = training
+    model = fit!(model, X, labels)
 
-    (samples, answers) = test
-    results = predict(model, samples)
+    X, y_true = test
+    y_pred = predict(model, X)
 
-    accuracy = calc_accuracy(results, answers)
+    accuracy = calc_accuracy(y_pred, y_true)
     assert(accuracy == 1.0)
 
     println("BATCH")
@@ -50,22 +50,22 @@ end
 function test_online(X, y, type_; training_ratio=0.8, C=1.0, ETA=1.0)
     model = init(C, ETA, type_)
 
-    (training, test) = split_dataset(X, y, training_ratio)
+    training, test = split_dataset(X, y, training_ratio)
 
-    (samples, labels) = training
-    for i in 1:size(samples, 2)
-        model = fit!(model, slice(samples, :, i), [labels[i]])
+    X, labels = training
+    for i in 1:size(X, 2)
+        model = fit!(model, slice(X, :, i), labels[i])
     end
 
-    (samples, answers) = test
+    X, y_true = test
 
-    results = Int64[]
-    for i in 1:size(samples, 2)
-        r = predict(model, slice(samples, :, i))
-        append!(results, r)
+    y_pred = Int64[]
+    for i in 1:size(X, 2)
+        r = predict(model, slice(X, :, i))
+        append!(y_pred, r)
     end
 
-    accuracy = calc_accuracy(results, answers)
+    accuracy = calc_accuracy(y_pred, y_true)
     assert(accuracy == 1.0)
 
     println("ONLINE")
@@ -80,10 +80,10 @@ function test_svmlight(training_file, test_file, ndim, type_;
     model = init(C, ETA, type_)
     model = fit!(model, training_file, ndim)
 
-    results = predict(model, test_file)
-    answers = [label for (_, label) in SVMLightFile(test_file)]
+    y_pred = predict(model, test_file)
+    y_true = [label for (_, label) in SVMLightFile(test_file)]
 
-    accuracy = calc_accuracy(results, answers)
+    accuracy = calc_accuracy(y_pred, y_true)
     assert(accuracy == 1.0)
 end
 
@@ -101,7 +101,6 @@ test_online(X, y, SCW1, training_ratio=0.8)
 test_online(X, y, SCW2, training_ratio=0.8)
 
 X = sparse(X)
-y = sparse(y)
 
 # Sparse matrix
 test_batch(X, y, SCW1, training_ratio=0.8)
