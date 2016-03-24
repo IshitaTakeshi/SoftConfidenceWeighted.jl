@@ -27,7 +27,7 @@ end
 
 
 function test_batch(X, y, type_; training_ratio = 0.8, C = 1.0, ETA = 1.0)
-    model = init(C, ETA, type_)
+    model = init(C = C, ETA = ETA, type_ = type_)
 
     training, test = split_dataset(X, y, training_ratio)
 
@@ -48,7 +48,7 @@ end
 
 
 function test_online(X, y, type_; training_ratio=0.8, C=1.0, ETA=1.0)
-    model = init(C, ETA, type_)
+    model = init(C = C, ETA = ETA, type_ = type_)
 
     training, test = split_dataset(X, y, training_ratio)
 
@@ -77,7 +77,7 @@ end
 
 function test_svmlight(training_file, test_file, ndim, type_;
                        training_ratio=0.8, C=1.0, ETA=1.0)
-    model = init(C, ETA, type_)
+    model = init(C = C, ETA = ETA, type_ = type_)
     model = fit!(model, training_file, ndim)
 
     y_pred = predict(model, test_file)
