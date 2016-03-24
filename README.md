@@ -45,3 +45,5 @@ model = fit!(model, "data/svmlight/digits.train.txt", ndim)
 y_pred = predict(model, "data/svmlight/digits.test.txt")
 assert(all(y_pred .== y_test))
 ```
+
+See test/example.jl for more details.
