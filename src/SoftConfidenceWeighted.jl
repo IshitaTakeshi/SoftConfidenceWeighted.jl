@@ -97,7 +97,7 @@ function calc_alpha2{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
 end
 
 
-function init(C, ETA, type_=SCW1::SCWType)
+function init(;C = 1, ETA = 1, type_ = SCW1::SCWType)
     global calc_alpha
     if type_ == SCW1
         calc_alpha = calc_alpha1
@@ -172,16 +172,23 @@ function train!{T<:AA,R<:AA}(scw::SCW, X::T, labels::R)
     t = Array(Float64, size(X, 1))
     for i in 1:size(X, 2)
         label = labels[i]
-        assert(label == 1 || label == -1)
+
+        if label != 1 && label != -1
+            throw(ArgumentError("Label must be 1 or -1"))
+        end
+
         update!(t, scw, slice(X, :, i), label)
     end
     return scw
 end
 
 
-function fit!{T<:AA,R<:AA}(scw::SCW, X::T, labels::R)
-    assert(ndims(X) <= 2)
-    assert(ndims(labels) <= 2)
+function fit!{T, R}(scw::SCW, X::AA{T, 2}, labels::AA{R, 1})
+    if size(X, 2) != length(labels)
+        message = "X and y have incompatible shapes. " *
+                  "size(X) = $(size(X)) size(y) = $(size(y))"
+        throw(ArgumentError(message))
+    end
 
     if !scw.has_fitted
         ndim = size(X, 1)
@@ -190,6 +197,17 @@ function fit!{T<:AA,R<:AA}(scw::SCW, X::T, labels::R)
 
     train!(scw, X, labels)
     return scw
+end
+
+
+function fit!{T}(scw::SCW, x::AA{T, 1}, label::Real)
+    ndim = size(x, 1)
+    if !scw.has_fitted
+        set_dimension!(scw, ndim)
+    end
+
+    t = Array(Float64, ndim)
+    update!(t, scw, x, label)
 end
 
 
@@ -220,7 +238,12 @@ end
 
 
 function predict{T<:AA}(scw::SCW, X::T)
-    return [compute(scw, slice(X, :, i)) for i in 1:size(X, 2)]
+    N = size(X, 2)
+    labels = Array(Int, N)
+    for i in 1:size(X, 2)
+        labels[i] = compute(scw, slice(X, :, i))
+    end
+    return labels
 end
 
 
