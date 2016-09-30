@@ -30,6 +30,7 @@ X_test, y_test = load_svmlight_file("data/svmlight/digits.test.txt", ndim)
 
 # C and ETA are hyperparameters.
 
+# Each column of X represents a sample. y is corresponding labels. 
 model = init(C = 1, ETA = 1, type_ = SCW1)
 model = fit!(model, X_train, y_train)
 y_pred = predict(model, X_test)
