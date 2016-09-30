@@ -22,15 +22,11 @@ Feature vectors are given as the columns of the matrix X.
 
 ```jl
 using SoftConfidenceWeighted
-using SVMLightLoader
-
-ndim = 64
-X_train, y_train = load_svmlight_file("data/svmlight/digits.train.txt", ndim)
-X_test, y_test = load_svmlight_file("data/svmlight/digits.test.txt", ndim)
 
 # C and ETA are hyperparameters.
+# X is a data matrix which each column represents a sample.
+# y is corresponding labels.
 
-# Each column of X represents a sample. y is corresponding labels. 
 model = init(C = 1, ETA = 1, type_ = SCW1)
 model = fit!(model, X_train, y_train)
 y_pred = predict(model, X_test)
