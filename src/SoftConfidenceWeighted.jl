@@ -1,7 +1,5 @@
 module SoftConfidenceWeighted
 
-using Devectorize
-
 import Distributions: Normal, cdf
 
 export init, fit!, predict, SCW1, SCW2
@@ -227,16 +225,6 @@ function predict{T<:AA}(scw::SCW, X::T)
     labels = Array(Int, N)
     for i in 1:size(X, 2)
         labels[i] = compute(scw, view(X, :, i))
-    end
-    return labels
-end
-
-
-function predict(scw::SCW, filename::AbstractString)
-    labels = Int64[]
-    for (x, _) in SVMLightFile(filename, scw.ndim)
-        label = compute(scw, x)
-        push!(labels, label)
     end
     return labels
 end
