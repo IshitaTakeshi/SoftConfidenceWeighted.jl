@@ -35,15 +35,3 @@ model = fit!(model, X_train, y_train)
 y_pred = predict(model, X_test)
 assert(all(y_pred .== y_test))
 ```
-
-### Training from file
-The input files must be in the svmlight format.
-
-```jl
-model = init(C = 1, ETA = 1, type_ = SCW1)
-model = fit!(model, "data/svmlight/digits.train.txt", ndim)
-y_pred = predict(model, "data/svmlight/digits.test.txt")
-assert(all(y_pred .== y_test))
-```
-
-See test/example.jl for more details.
