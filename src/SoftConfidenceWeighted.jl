@@ -3,7 +3,6 @@ module SoftConfidenceWeighted
 using Devectorize
 
 import Distributions: Normal, cdf
-import SVMLightLoader: SVMLightFile
 
 export init, fit!, predict, SCW1, SCW2
 
@@ -56,13 +55,12 @@ normal_distribution = Normal(0, 1)
 
 
 function calc_margin{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
-    #Devectorize.jl requires assignment
-    @devec t = label .* dot(scw.weights, x)
+    label * dot(scw.weights, x)
 end
 
 
 function calc_confidence{T<:AA}(scw::SCW, x::T)
-    @devec t = dot(x, scw.covariance .* x)
+    dot(x, scw.covariance .* x)
 end
 
 
@@ -112,7 +110,7 @@ end
 
 
 function loss{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
-    @devec t = label .* dot(scw.weights, x)
+    t = label .* dot(scw.weights, x)
     if t >= 1
         return 0
     end
@@ -140,7 +138,7 @@ function update_covariance!{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, label::R)
 
     # same as
     # scw.covariance -= beta * (c .* x) .* (c .* x)
-    @devec t[:] = (c .* x) .* (c .* x)
+    t[:] = (c .* x) .* (c .* x)
     BLAS.axpy!(-beta, t, scw.covariance)
     return scw
 end
@@ -151,7 +149,7 @@ function update_weights!{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, label::R)
 
     # same as
     # scw.weights += alpha * label * (scw.covariance .* x)
-    @devec t[:] = scw.covariance .* x
+    t[:] = scw.covariance .* x
     BLAS.axpy!(alpha * label, t, scw.weights)
     return scw
 end
@@ -177,7 +175,7 @@ function train!{T<:AA,R<:AA}(scw::SCW, X::T, labels::R)
             throw(ArgumentError("Label must be 1 or -1"))
         end
 
-        update!(t, scw, slice(X, :, i), label)
+        update!(t, scw, view(X, :, i), label)
     end
     return scw
 end
@@ -211,19 +209,6 @@ function fit!{T}(scw::SCW, x::AA{T, 1}, label::Real)
 end
 
 
-function fit!(scw::SCW, filename::AbstractString, ndim::Int64)
-    if !scw.has_fitted
-        set_dimension!(scw, ndim)
-    end
-
-    t = Array(Float64, ndim)
-    for (vector, label) in SVMLightFile(filename, ndim)
-        update!(t, scw, vector, label)
-    end
-    return scw
-end
-
-
 @deprecate fit fit!
 
 
@@ -241,7 +226,7 @@ function predict{T<:AA}(scw::SCW, X::T)
     N = size(X, 2)
     labels = Array(Int, N)
     for i in 1:size(X, 2)
-        labels[i] = compute(scw, slice(X, :, i))
+        labels[i] = compute(scw, view(X, :, i))
     end
     return labels
 end
