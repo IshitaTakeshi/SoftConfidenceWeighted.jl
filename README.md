@@ -24,7 +24,7 @@ Feature vectors are given as the columns of the matrix X.
 using SoftConfidenceWeighted
 
 # C and ETA are hyperparameters.
-# X is a data matrix which each column represents a sample.
+# X is a data matrix which each column represents a data vector.
 # y is corresponding labels.
 
 model = init(C = 1, ETA = 1, type_ = SCW1)
