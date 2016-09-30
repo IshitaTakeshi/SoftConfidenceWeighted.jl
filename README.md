@@ -30,5 +30,4 @@ using SoftConfidenceWeighted
 model = init(C = 1, ETA = 1, type_ = SCW1)
 model = fit!(model, X_train, y_train)
 y_pred = predict(model, X_test)
-assert(all(y_pred .== y_test))
 ```
