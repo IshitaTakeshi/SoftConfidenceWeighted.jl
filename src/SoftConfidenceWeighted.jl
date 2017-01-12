@@ -30,11 +30,11 @@ type SCW
     cdf::CDF
     ndim::Int64
     w::Array{Float64, 1}  # weights
-    Σ::Array{Float64, 1}  # covariance
+    Σ::Array{Float64, 2}  # covariance
     has_fitted::Bool
 
     function SCW(C, ETA)
-        new(C, CDF(ETA), -1, [], [], false)
+        new(C, CDF(ETA), -1, zeros(0), zeros(0, 0), false)
     end
 end
 
@@ -43,20 +43,16 @@ function set_dimension!(scw::SCW, ndim::Int)
     assert(!scw.has_fitted)
     scw.ndim = ndim
     scw.w = zeros(ndim)
-    scw.Σ = ones(ndim)
+    scw.Σ = eye(ndim)
     scw.has_fitted = true
     return scw
 end
 
 
-function calc_margin{T<:AA,R<:Real}(scw::SCW, x::T, y::R)
-    y * dot(scw.w, x)
-end
+calc_margin{T<:AA,R<:Real}(scw::SCW, x::T, y::R) = y * dot(scw.w, x)
 
 
-function calc_confidence{T<:AA}(scw::SCW, x::T)
-    dot(x, scw.Σ .* x)
-end
+calc_confidence{T<:AA}(scw::SCW, x::T) = (x' * scw.Σ * x)[1]
 
 
 function calc_α1{T<:AA,R<:Real}(scw::SCW, x::T, y::R)
@@ -103,7 +99,7 @@ end
 
 
 function loss{T<:AA,R<:Real}(scw::SCW, x::T, y::R)
-    t = y .* dot(scw.w, x)
+    t = y * dot(scw.w, x)
     if t >= 1
         return 0
     end
@@ -111,7 +107,7 @@ function loss{T<:AA,R<:Real}(scw::SCW, x::T, y::R)
 end
 
 
-function calc_beta{T<:AA,R<:Real}(scw::SCW, x::T, y::R)
+function calc_β{T<:AA,R<:Real}(scw::SCW, x::T, y::R)
     α = calc_α(scw, x, y)
     v = calc_confidence(scw, x)
     m = calc_margin(scw, x, y)
@@ -124,33 +120,31 @@ function calc_beta{T<:AA,R<:Real}(scw::SCW, x::T, y::R)
 end
 
 
-function update_Σ!{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, y::R)
-    beta = calc_beta(scw, x, y)
+function update_Σ!{T<:AA,R<:Real}(scw::SCW, x::T, y::R)
+    β = calc_β(scw, x, y)
 
     # same as
-    # scw.Σ -= beta * (Σ .* x) .* (Σ .* x)
-    t[:] = (scw.Σ .* x) .* (scw.Σ .* x)
-    BLAS.axpy!(-beta, t, scw.Σ)
+    # scw.Σ -= β * Σ * x * x' * Σ
+    BLAS.axpy!(-β, scw.Σ * x * x' * scw.Σ, scw.Σ)
     return scw
 end
 
 
-function update_w!{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, y::R)
+function update_w!{T<:AA,R<:Real}(scw::SCW, x::T, y::R)
     α = calc_α(scw, x, y)
 
     # same as
     # scw.w += α * y * (scw.Σ .* x)
-    t[:] = scw.Σ .* x
-    BLAS.axpy!(α * y, t, scw.w)
+    BLAS.axpy!(α * y, scw.Σ * x, scw.w)
     return scw
 end
 
 
-function update!{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, y::R)
+function update!{T<:AA,R<:Real}(scw::SCW, x::T, y::R)
     x = vec(full(x))
     if loss(scw, x, y) > 0
-        update_w!(t, scw, x, y)
-        update_Σ!(t, scw, x, y)
+        update_w!(scw, x, y)
+        update_Σ!(scw, x, y)
     end
     return scw
 end
@@ -158,7 +152,6 @@ end
 
 function train!{T<:AA,R<:AA}(scw::SCW, X::T, ys::R)
     # preallocate for performance optimization
-    t = Array(Float64, size(X, 1))
     for i in 1:size(X, 2)
         y = ys[i]
 
@@ -166,7 +159,7 @@ function train!{T<:AA,R<:AA}(scw::SCW, X::T, ys::R)
             throw(ArgumentError("Label must be 1 or -1"))
         end
 
-        update!(t, scw, view(X, :, i), y)
+        update!(scw, view(X, :, i), y)
     end
     return scw
 end
@@ -195,8 +188,7 @@ function fit!{T}(scw::SCW, x::AA{T, 1}, y::Real)
         set_dimension!(scw, ndim)
     end
 
-    t = Array(Float64, ndim)
-    update!(t, scw, x, y)
+    update!(scw, x, y)
 end
 
 
