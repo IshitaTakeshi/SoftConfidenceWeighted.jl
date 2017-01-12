@@ -11,15 +11,15 @@ typealias AA AbstractArray
 
 
 type CDF
-    phi
-    psi
-    zeta
+    ϕ
+    ψ
+    ζ
 
     function CDF(ETA)
-        phi = cdf(normal_distribution, ETA)
-        psi = 1 + phi^2 / 2
-        zeta = 1 + phi^2
-        new(phi, psi, zeta)
+        ϕ = cdf(Normal(0, 1), ETA)  # CDF of the standard normal distribution
+        ψ = 1 + ϕ^2 / 2
+        ζ = 1 + ϕ^2
+        new(ϕ, ψ, ζ)
     end
 end
 
@@ -29,8 +29,8 @@ type SCW
     C::Float64
     cdf::CDF
     ndim::Int64
-    weights::Array{Float64, 1}
-    covariance::Array{Float64, 1}
+    w::Array{Float64, 1}  # weights
+    Σ::Array{Float64, 1}  # covariance
     has_fitted::Bool
 
     function SCW(C, ETA)
@@ -42,63 +42,58 @@ end
 function set_dimension!(scw::SCW, ndim::Int)
     assert(!scw.has_fitted)
     scw.ndim = ndim
-    scw.weights = zeros(ndim)
-    scw.covariance = ones(ndim)
+    scw.w = zeros(ndim)
+    scw.Σ = ones(ndim)
     scw.has_fitted = true
     return scw
 end
 
 
-normal_distribution = Normal(0, 1)
-
-
-function calc_margin{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
-    label * dot(scw.weights, x)
+function calc_margin{T<:AA,R<:Real}(scw::SCW, x::T, y::R)
+    y * dot(scw.w, x)
 end
 
 
 function calc_confidence{T<:AA}(scw::SCW, x::T)
-    dot(x, scw.covariance .* x)
+    dot(x, scw.Σ .* x)
 end
 
 
-function calc_alpha1{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
+function calc_α1{T<:AA,R<:Real}(scw::SCW, x::T, y::R)
     v = calc_confidence(scw, x)
-    m = calc_margin(scw, x, label)
+    m = calc_margin(scw, x, y)
     cdf = scw.cdf
-    (phi, psi, zeta) = (cdf.phi, cdf.psi, cdf.zeta)
 
-    j = m^2 * phi^4 / 4
-    k = v * zeta * phi^2
-    t = (-m*psi + sqrt(j+k)) / (v*zeta)
+    j = m^2 * cdf.ϕ^4 / 4
+    k = v * cdf.ζ * cdf.ϕ^2
+    t = (-m*cdf.ψ + √(j+k)) / (v*cdf.ζ)
     return min(scw.C, max(0, t))
 end
 
 
-function calc_alpha2{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
+function calc_α2{T<:AA,R<:Real}(scw::SCW, x::T, y::R)
     v = calc_confidence(scw, x)
-    m = calc_margin(scw, x, label)
+    m = calc_margin(scw, x, y)
     cdf = scw.cdf
-    (phi, psi, zeta) = (cdf.phi, cdf.psi, cdf.zeta)
 
-    n = v+1 / scw.C
-    a = (phi*m*v)^2
-    b = 4*n*v * (n + v * phi^2)
-    gamma = phi * sqrt(a+b)
+    n = v + 1 / 2scw.C
+    a = (cdf.ϕ*m*v)^2
+    b = 4*n*v * (n + v * cdf.ϕ^2)
+    γ = cdf.ϕ * √(a+b)
 
-    c = -(2 * m * n + m * v * phi^2)
-    d = n^2 + n * v * phi^2
-    t = (c+gamma) / 2d
+    c = -(2 * m * n + m * v * cdf.ϕ^2)
+    d = n^2 + n * v * cdf.ϕ^2
+    t = (c+γ) / 2d
     return max(0, t)
 end
 
 
 function init(;C = 1, ETA = 1, type_ = SCW1::SCWType)
-    global calc_alpha
+    global calc_α
     if type_ == SCW1
-        calc_alpha = calc_alpha1
+        calc_α = calc_α1
     elseif type_ == SCW2
-        calc_alpha = calc_alpha2
+        calc_α = calc_α2
     else
         assert(true)
     end
@@ -107,8 +102,8 @@ function init(;C = 1, ETA = 1, type_ = SCW1::SCWType)
 end
 
 
-function loss{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
-    t = label .* dot(scw.weights, x)
+function loss{T<:AA,R<:Real}(scw::SCW, x::T, y::R)
+    t = y .* dot(scw.w, x)
     if t >= 1
         return 0
     end
@@ -116,71 +111,69 @@ function loss{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
 end
 
 
-function calc_beta{T<:AA,R<:Real}(scw::SCW, x::T, label::R)
-    alpha = calc_alpha(scw, x, label)
+function calc_beta{T<:AA,R<:Real}(scw::SCW, x::T, y::R)
+    α = calc_α(scw, x, y)
     v = calc_confidence(scw, x)
-    m = calc_margin(scw, x, label)
+    m = calc_margin(scw, x, y)
     cdf = scw.cdf
-    (phi, psi, zeta) = (cdf.phi, cdf.psi, cdf.zeta)
 
-    j = -alpha * v * phi
-    k = sqrt((alpha*v*phi)^2 + 4v)
+    j = -α * v * cdf.ϕ
+    k = √((α*v*cdf.ϕ)^2 + 4v)
     u = (j+k)^2 / 4
-    return (alpha * phi) / (sqrt(u) + v*alpha*phi)
+    return (α * cdf.ϕ) / (√u + v*α*cdf.ϕ)
 end
 
 
-function update_covariance!{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, label::R)
-    beta = calc_beta(scw, x, label)
-    c = scw.covariance
+function update_Σ!{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, y::R)
+    beta = calc_beta(scw, x, y)
 
     # same as
-    # scw.covariance -= beta * (c .* x) .* (c .* x)
-    t[:] = (c .* x) .* (c .* x)
-    BLAS.axpy!(-beta, t, scw.covariance)
+    # scw.Σ -= beta * (Σ .* x) .* (Σ .* x)
+    t[:] = (scw.Σ .* x) .* (scw.Σ .* x)
+    BLAS.axpy!(-beta, t, scw.Σ)
     return scw
 end
 
 
-function update_weights!{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, label::R)
-    alpha = calc_alpha(scw, x, label)
+function update_w!{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, y::R)
+    α = calc_α(scw, x, y)
 
     # same as
-    # scw.weights += alpha * label * (scw.covariance .* x)
-    t[:] = scw.covariance .* x
-    BLAS.axpy!(alpha * label, t, scw.weights)
+    # scw.w += α * y * (scw.Σ .* x)
+    t[:] = scw.Σ .* x
+    BLAS.axpy!(α * y, t, scw.w)
     return scw
 end
 
 
-function update!{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, label::R)
+function update!{S<:AA,T<:AA,R<:Real}(t::S, scw::SCW, x::T, y::R)
     x = vec(full(x))
-    if loss(scw, x, label) > 0
-        update_weights!(t, scw, x, label)
-        update_covariance!(t, scw, x, label)
+    if loss(scw, x, y) > 0
+        update_w!(t, scw, x, y)
+        update_Σ!(t, scw, x, y)
     end
     return scw
 end
 
 
-function train!{T<:AA,R<:AA}(scw::SCW, X::T, labels::R)
+function train!{T<:AA,R<:AA}(scw::SCW, X::T, ys::R)
     # preallocate for performance optimization
     t = Array(Float64, size(X, 1))
     for i in 1:size(X, 2)
-        label = labels[i]
+        y = ys[i]
 
-        if label != 1 && label != -1
+        if y != 1 && y != -1
             throw(ArgumentError("Label must be 1 or -1"))
         end
 
-        update!(t, scw, view(X, :, i), label)
+        update!(t, scw, view(X, :, i), y)
     end
     return scw
 end
 
 
-function fit!{T, R}(scw::SCW, X::AA{T, 2}, labels::AA{R, 1})
-    if size(X, 2) != length(labels)
+function fit!{T, R}(scw::SCW, X::AA{T, 2}, ys::AA{R, 1})
+    if size(X, 2) != length(ys)
         message = "X and y have incompatible shapes. " *
                   "size(X) = $(size(X)) size(y) = $(size(y))"
         throw(ArgumentError(message))
@@ -191,19 +184,19 @@ function fit!{T, R}(scw::SCW, X::AA{T, 2}, labels::AA{R, 1})
         set_dimension!(scw, ndim)
     end
 
-    train!(scw, X, labels)
+    train!(scw, X, ys)
     return scw
 end
 
 
-function fit!{T}(scw::SCW, x::AA{T, 1}, label::Real)
+function fit!{T}(scw::SCW, x::AA{T, 1}, y::Real)
     ndim = size(x, 1)
     if !scw.has_fitted
         set_dimension!(scw, ndim)
     end
 
     t = Array(Float64, ndim)
-    update!(t, scw, x, label)
+    update!(t, scw, x, y)
 end
 
 
@@ -212,7 +205,7 @@ end
 
 function compute{T<:AA}(scw::SCW, x::T)
     x = vec(full(x))
-    if dot(x, scw.weights) > 0
+    if dot(x, scw.w) > 0
         return 1
     else
         return -1
@@ -222,11 +215,11 @@ end
 
 function predict{T<:AA}(scw::SCW, X::T)
     N = size(X, 2)
-    labels = Array(Int, N)
+    ys = Array(Int, N)
     for i in 1:size(X, 2)
-        labels[i] = compute(scw, view(X, :, i))
+        ys[i] = compute(scw, view(X, :, i))
     end
-    return labels
+    return ys
 end
 
 end # module
