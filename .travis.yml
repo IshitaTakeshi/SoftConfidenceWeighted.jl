@@ -6,10 +6,10 @@ os:
 julia:
 #  - release
 #  - nightly
-  - "0.5"
+  - 0.5
 notifications:
   email: false
 
-script:
-  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
-  - julia -e 'Pkg.clone(pwd()); Pkg.build("SoftConfidenceWeighted"); Pkg.test("SoftConfidenceWeighted"; coverage=true)'
+#script: # use default script which is equivalent to the following
+#  - if [[ -a .git/shallow ]]; then git fetch --unshallow; fi
+#  - julia -e 'Pkg.clone(pwd()); Pkg.build("SoftConfidenceWeighted"); Pkg.test("SoftConfidenceWeighted"; coverage=true)'
